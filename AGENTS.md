@@ -1,56 +1,43 @@
-# Agent Instructions & Project Overview
+# Agent Instructions & Project Overview (Clean Version)
 
 This document provides context and instructions for AI agents working on the **cbs-login** project.
 
-## Project Overview
-A Next.js 16 (App Router) application featuring a robust Authentication and Admin system using SQLite.
+## Project Architecture
+A Next.js 16 (App Router) application with a centralized logic structure.
 
-## Tech Stack
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Database**: SQLite (via `better-sqlite3`)
-- **Authentication**: Custom JWT (via `jose`) with HTTP-only Cookies
-- **Password Hashing**: `bcrypt`
+## Core Tech Stack
+- **Framework**: Next.js 16.2.6
+- **Database**: SQLite (`better-sqlite3`)
+- **Authentication**: JWT (`jose`) with HTTP-only Cookies
+- **Scraping**: `cheerio` for HTML parsing
 - **Styling**: Tailwind CSS 4
 
-## Database Schema (`sqlite.db`)
-Direct access via `lib/db.ts`.
+## Key Directory Structure
+- `app/`: Next.js App Router pages and API routes.
+- `lib/`: Centralized business logic, database, and utilities.
+- `lib/types.ts`: **Shared TypeScript interfaces** for consistency.
+- `proxy.ts`: **Next.js 16 Proxy** (formerly middleware.ts) for route protection.
 
-### Tables:
-1. **`users`**:
-   - `id`: Integer (PK)
-   - `username`: Text (Unique)
-   - `password`: Text (Hashed)
-   - `role`: Text ('admin', 'staff')
+## Authentication & Security
+- **Proxy**: Protects `/admin` and authenticated routes.
+- **Session**: Signed JWT stored in a `session` cookie.
+- **Secret**: Managed via `JWT_SECRET` environment variable.
 
-2. **`logs`**:
-   - `id`: Integer (PK)
-   - `action`: Text
-   - `userId`: Integer (FK)
-   - `createdAt`: Datetime
+## Data Persistence
+- **Database**: `sqlite.db` (SQLite).
+- **ORM**: Raw SQL via `better-sqlite3` prepared statements.
+- **Tables**: `users`, `logs`, `settings`.
 
-3. **`settings`**:
-   - `key`: Text (PK)
-   - `value`: Text
+## External Integration (Gate API)
+- **Target**: PHP-based gate control system.
+- **Mechanism**: Server-side scraping and form-data submission.
+- **Security**: Access restricted to authenticated users via internal API routes.
 
-## Authentication Flow
-- **Middleware**: `middleware.ts` protects all routes except `/login` and static assets.
-- **Session**: Stored in a `session` cookie (JWT).
-- **Utilities**: `lib/auth.ts` for encrypting/decrypting sessions and `getSession()`.
-- **Role-Based Access**: 
-  - Admin: Full access to `/admin` and all features.
-  - Staff: Access to home page only; restricted from `/admin`.
+## Development Standards
+1. **Types**: Always use interfaces from `lib/types.ts`.
+2. **Logic**: Keep UI components lean; move logic to `lib/` utilities.
+3. **API Routes**: Secure all sensitive API routes by checking `getSession()`.
+4. **Environment**: Ensure `API_GATE` and `JWT_SECRET` are configured.
 
-## Logging System
-- Utility: `addLog(action, userId)` in `lib/logs.ts`.
-- Condition: Only logs if `log_enabled` in `settings` table is `'true'`.
-- Toggle: Managed in Admin Settings.
-
-## Development Rules
-- **Direct SQL**: Use `better-sqlite3` prepared statements to prevent SQL injection.
-- **Server Actions**: Use Server Actions for all data mutations and authentication logic.
-- **UI Consistency**: Use Tailwind CSS for styling, adhering to the existing clean/modern aesthetic.
-- **Security**: Never expose hashed passwords or JWT secrets in client-side components.
-
-## Credentials (Dev/Seed)
+## Seed Access
 - **Admin**: `admin` / `admin1234`

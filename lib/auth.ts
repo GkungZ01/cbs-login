@@ -1,31 +1,39 @@
-import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
+import { SessionPayload } from "./types";
 
-const secretKey = process.env.JWT_SECRET || 'your_super_secret_key_change_me';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.warn("Warning: JWT_SECRET is not set in environment variables. Using fallback for development.");
+}
+
+const secretKey = JWT_SECRET || "development_fallback_secret_key";
 const key = new TextEncoder().encode(secretKey);
 
-export async function encrypt(payload: any) {
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
+export async function encrypt(payload: SessionPayload): Promise<string> {
+  return await new SignJWT(payload as any)
+    .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime('2h')
+    .setExpirationTime("2h")
     .sign(key);
 }
 
-export async function decrypt(input: string): Promise<any> {
+export async function decrypt(input: string): Promise<SessionPayload> {
   const { payload } = await jwtVerify(input, key, {
-    algorithms: ['HS256'],
+    algorithms: ["HS256"],
   });
-  return payload;
+  return payload as unknown as SessionPayload;
 }
 
-export async function getSession() {
+export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
-  const session = cookieStore.get('session')?.value;
-  if (!session) return null;
+  const sessionToken = cookieStore.get("session")?.value;
+  
+  if (!sessionToken) return null;
+  
   try {
-    return await decrypt(session);
+    return await decrypt(sessionToken);
   } catch (err) {
     return null;
   }
