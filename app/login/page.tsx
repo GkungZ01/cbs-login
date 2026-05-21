@@ -1,78 +1,94 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { login } from './actions';
+import { useActionState, useEffect, useState } from "react";
+import { login } from "./actions";
+import PasswordInput from "@/app/components/PasswordInput";
+import Modal, { ModalType } from "@/app/components/Modal";
 
 export default function LoginPage() {
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  // ใช้ useActionState เพื่อจัดการสถานะการส่งฟอร์ม (แนะนำสำหรับ Next.js 15+)
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: any, formData: FormData) => {
+      return await login(formData);
+    },
+    null
+  );
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: ModalType;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
-    const formData = new FormData(event.currentTarget);
-    const result = await login(formData);
-
-    if (result?.error) {
-      setError(result.error);
-      setLoading(false);
+  // เมื่อมี Error กลับมาจาก Server Action ให้แสดง Modal
+  useEffect(() => {
+    if (state?.error) {
+      setModal({
+        isOpen: true,
+        title: "เข้าสู่ระบบไม่สำเร็จ",
+        message: state.error,
+        type: "error",
+      });
     }
-  }
+  }, [state]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-10 shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            เข้าสู่ระบบ
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            กรุณากรอกชื่อผู้ใช้และรหัสผ่านเพื่อดำเนินการต่อ
-          </p>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="-space-y-px rounded-md shadow-sm">
-            <div>
-              <label className="sr-only">ชื่อผู้ใช้</label>
-              <input
-                name="username"
-                type="text"
-                required
-                className="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                placeholder="ชื่อผู้ใช้"
-              />
-            </div>
-            <div>
-              <label className="sr-only">รหัสผ่าน</label>
-              <input
-                name="password"
-                type="password"
-                required
-                className="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                placeholder="รหัสผ่าน"
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="text-center text-sm text-red-600 font-medium">
-              {error}
-            </div>
-          )}
-
+    <>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8 bg-white p-10 rounded-3xl shadow-xl border border-slate-100">
           <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400"
-            >
-              {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
-            </button>
+            <div className="mx-auto flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20 text-white font-bold text-3xl">
+              C
+            </div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">เข้าสู่ระบบ</h2>
+            <p className="mt-2 text-center text-sm text-slate-500 font-medium">กรุณากรอกข้อมูลเพื่อเข้าถึงแผงควบคุม</p>
           </div>
-        </form>
+          
+          {/* เปลี่ยนมาใช้ action แทน onSubmit เพื่อความเสถียรบน IP ที่ไม่ใช่ localhost */}
+          <form className="mt-8 space-y-6" action={formAction}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">ชื่อผู้ใช้</label>
+                <input
+                  name="username"
+                  type="text"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  placeholder="ชื่อผู้ใช้ของคุณ"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">รหัสผ่าน</label>
+                <PasswordInput name="password" required placeholder="รหัสผ่านของคุณ" />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="group relative flex w-full justify-center rounded-xl border border-transparent bg-indigo-600 py-3 px-4 text-sm font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+              >
+                {isPending ? "กำลังตรวจสอบข้อมูล..." : "เข้าสู่ระบบ"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
+    </>
   );
 }

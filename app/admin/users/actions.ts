@@ -47,3 +47,36 @@ export async function deleteUser(userId: number) {
   
   revalidatePath('/admin/users');
 }
+
+export async function updateUser(formData: FormData) {
+  const userId = parseInt(formData.get('userId') as string);
+  const password = formData.get('password') as string;
+  const role = formData.get('role') as string;
+
+  if (!userId || !role) {
+    return { error: 'ข้อมูลไม่ครบถ้วน' };
+  }
+
+  try {
+    const session = await getSession();
+    const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string };
+    
+    if (!user) {
+      return { error: 'ไม่พบผู้ใช้งาน' };
+    }
+
+    if (password) {
+      const hashedPassword = bcrypt.hashSync(password, 10);
+      db.prepare('UPDATE users SET password = ?, role = ? WHERE id = ?').run(hashedPassword, role, userId);
+      addLog(`Updated user ${user.username} (Password changed)`, session?.userId);
+    } else {
+      db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, userId);
+      addLog(`Updated user ${user.username} (Role changed to ${role})`, session?.userId);
+    }
+
+    revalidatePath('/admin/users');
+    return { success: true };
+  } catch (err: any) {
+    return { error: 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล' };
+  }
+}

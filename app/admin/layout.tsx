@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import { getSession } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import AdminSidebar from "./AdminSidebar";
 
 export default async function AdminLayout({
   children,
@@ -9,55 +9,32 @@ export default async function AdminLayout({
 }) {
   const session = await getSession();
 
-  // Redundant check because of middleware, but good for safety
-  if (session?.role !== 'admin') {
-    redirect('/');
+  if (session?.role !== "admin") {
+    redirect("/");
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex-shrink-0">
-        <div className="p-6 text-xl font-bold border-b border-slate-800">
-          Admin Panel
-        </div>
-        <nav className="mt-6">
-          <Link
-            href="/admin/users"
-            className="block py-3 px-6 hover:bg-slate-800 transition"
-          >
-            จัดการ User
-          </Link>
-          <Link
-            href="/admin/logs"
-            className="block py-3 px-6 hover:bg-slate-800 transition"
-          >
-            ดู Log ระบบ
-          </Link>
-          <Link
-            href="/admin/settings"
-            className="block py-3 px-6 hover:bg-slate-800 transition"
-          >
-            ตั้งค่าระบบ
-          </Link>
-          <div className="mt-10 border-t border-slate-800 pt-6">
-            <Link
-              href="/"
-              className="block py-3 px-6 text-slate-400 hover:text-white transition"
-            >
-              ← กลับหน้าแรก
-            </Link>
-          </div>
-        </nav>
-      </aside>
+    <div className="flex min-h-screen bg-slate-50">
+      <AdminSidebar />
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="bg-white shadow-sm py-4 px-8 flex justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-700">ยินดีต้อนรับ, {session.username}</h2>
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0">
+          <h2 className="text-lg font-semibold text-slate-800">แผงควบคุมระบบ</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm font-bold text-slate-900 leading-none">{session.username}</p>
+              <p className="text-xs text-slate-500 mt-1 capitalize">{session.role}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold">
+              {session.username[0].toUpperCase()}
+            </div>
+          </div>
         </header>
-        <div className="p-8">
-          {children}
+
+        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </div>
       </main>
     </div>
